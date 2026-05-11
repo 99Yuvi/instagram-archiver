@@ -38,7 +38,7 @@ def download_video(req: DownloadRequest):
         "no_warnings": True,
     }
 
-    if req.use_cookies and os.path.exists("cookies.txt"):
+    if os.path.exists("cookies.txt"):
         ydl_opts["cookiefile"] = "cookies.txt"
 
     try:

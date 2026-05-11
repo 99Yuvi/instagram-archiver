@@ -28,13 +28,6 @@
         />
       </div>
 
-      <div class="flex items-center gap-2">
-        <input type="checkbox" id="useCookies" class="w-4 h-4 accent-purple-500" />
-        <label for="useCookies" class="text-sm text-gray-600">
-          Use cookies.txt (required for stories / private content)
-        </label>
-      </div>
-
       <button
         id="downloadBtn"
         onclick="downloadVideo()"
@@ -99,7 +92,7 @@
         const response = await fetch('/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, use_cookies: useCookies }),
+          body: JSON.stringify({ url }),
         });
 
         if (!response.ok) {
