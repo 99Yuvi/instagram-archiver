@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram Archiver</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="text-5xl mb-3">📸</div>
+      <h1 class="text-2xl font-bold text-gray-800">Instagram Archiver</h1>
+      <p class="text-gray-500 text-sm mt-1">Download your reels &amp; stories for personal archiving</p>
+    </div>
+
+    <!-- Form -->
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Instagram URL</label>
+        <input
+          id="urlInput"
+          type="url"
+          placeholder="https://www.instagram.com/reel/..."
+          class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+        />
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="useCookies" class="w-4 h-4 accent-purple-500" />
+        <label for="useCookies" class="text-sm text-gray-600">
+          Use cookies.txt (required for stories / private content)
+        </label>
+      </div>
+
+      <button
+        id="downloadBtn"
+        onclick="downloadVideo()"
+        class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Download
+      </button>
+    </div>
+
+    <!-- Status -->
+    <div id="status" class="mt-5 hidden">
+      <div id="loadingMsg" class="hidden flex items-center gap-2 text-sm text-purple-600">
+        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        Downloading... please wait
+      </div>
+      <div id="errorMsg" class="hidden text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-3"></div>
+      <div id="successMsg" class="hidden text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+        ✅ Download started! Check your downloads folder.
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <details class="mt-6 text-xs text-gray-500 border-t pt-4">
+      <summary class="cursor-pointer font-medium text-gray-600 hover:text-gray-800">How to use cookies.txt (for stories)</summary>
+      <ol class="mt-2 space-y-1 list-decimal list-inside leading-relaxed">
+        <li>Install the browser extension <strong>"Get cookies.txt LOCALLY"</strong></li>
+        <li>Log in to Instagram in your browser</li>
+        <li>Click the extension and export cookies for <code>instagram.com</code></li>
+        <li>Save the file as <code>cookies.txt</code> in the project root folder</li>
+        <li>Check the "Use cookies.txt" box above</li>
+      </ol>
+    </details>
+
+  </div>
+
+  <script>
+    async function downloadVideo() {
+      const url = document.getElementById('urlInput').value.trim();
+      const useCookies = document.getElementById('useCookies').checked;
+      const btn = document.getElementById('downloadBtn');
+      const status = document.getElementById('status');
+      const loadingMsg = document.getElementById('loadingMsg');
+      const errorMsg = document.getElementById('errorMsg');
+      const successMsg = document.getElementById('successMsg');
+
+      if (!url) {
+        showError('Please enter an Instagram URL.');
+        return;
+      }
+
+      // Reset UI
+      status.classList.remove('hidden');
+      loadingMsg.classList.remove('hidden');
+      errorMsg.classList.add('hidden');
+      successMsg.classList.add('hidden');
+      btn.disabled = true;
+
+      try {
+        const response = await fetch('/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, use_cookies: useCookies }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.detail || 'Download failed');
+        }
+
+        // Trigger file save
+        const blob = await response.blob();
+        const disposition = response.headers.get('content-disposition') || '';
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : 'instagram_video.mp4';
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        loadingMsg.classList.add('hidden');
+        successMsg.classList.remove('hidden');
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function showError(msg) {
+      const status = document.getElementById('status');
+      const loadingMsg = document.getElementById('loadingMsg');
+      const errorMsg = document.getElementById('errorMsg');
+      status.classList.remove('hidden');
+      loadingMsg.classList.add('hidden');
+      errorMsg.textContent = '❌ ' + msg;
+      errorMsg.classList.remove('hidden');
+    }
+
+    // Allow Enter key to trigger download
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('urlInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') downloadVideo();
+      });
+    });
+  </script>
+</body>
+</html>
